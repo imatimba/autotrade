@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         POE2 Auto trade
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @match        https://www.pathofexile.com/trade2*
 // @grant        GM_addStyle
 // @grant        GM_notification
@@ -37,12 +37,15 @@
     `);
  
     // Function to click trade button
-    function clickTrade(row) { 
-        const directButton = row.querySelector('.direct-btn:not(.disabled)');
-        if (!directButton) return;
+    function clickTrade(element) { 
+        if (element.matches('.direct-btn:not(.disabled)')) {
+            element.click();
+        } else {
+            const directButton = element.querySelector('.direct-btn:not(.disabled)');
+            if (!directButton) return;
         
-        directButton.click();
-     
+            directButton.click();
+        }
     }
  
     let observer;
@@ -52,6 +55,8 @@
                 mutations.forEach((mutation) => {
                     mutation.addedNodes.forEach((node) => {
                         if (node.nodeType === 1 && node.matches('.row[data-id]')) {
+                            clickTrade(node);
+                        } else if (node.nodeType === 1 && node.matches('.direct-btn:not(.disabled)')) {
                             clickTrade(node);
                         }
                     });
@@ -69,7 +74,7 @@
         }
     }
  
-    // Add alert buttons to existing items
+    // Add autotrade button next to live search button
     function onLoad() {
         const interval = setInterval(() => {
             const liveSearchBtn = document.querySelector("button.btn.livesearch-btn");
