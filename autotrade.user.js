@@ -9,6 +9,8 @@
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
 // @license      MIT
+// @downloadURL https://github.com/imatimba/autotrade/raw/refs/heads/main/autotrade.user.js
+// @updateURL https://github.com/imatimba/autotrade/raw/refs/heads/main/autotrade.user.js
 // ==/UserScript==
  
 (function() {
