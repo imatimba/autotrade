@@ -9,8 +9,8 @@
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
 // @license      MIT
-// @downloadURL https://github.com/imatimba/autotrade/raw/refs/heads/main/autotrade.user.js
-// @updateURL https://github.com/imatimba/autotrade/raw/refs/heads/main/autotrade.user.js
+// @downloadURL  https://github.com/imatimba/autotrade/raw/refs/heads/main/autotrade.user.js
+// @updateURL    https://github.com/imatimba/autotrade/raw/refs/heads/main/autotrade.user.js
 // ==/UserScript==
  
 (function() {
@@ -32,7 +32,7 @@
             border-radius: 3px;
         }
         .enabled-btn.active {
-            background-color: #36f48bff !important;
+            background-color: #10a553ff !important;
         }
     `);
  
