@@ -1,4 +1,3 @@
- 
 // ==UserScript==
 // @name         POE2 Auto trade
 // @namespace    http://tampermonkey.net/
@@ -18,7 +17,7 @@
     // Styles for the UI
     GM_addStyle(`
         .enabled-btn {
-            background-color: #af4c51ff;
+            background-color: #af4c51ff !important;
             border: none;
             color: white;
             padding: 5px 10px;
@@ -31,43 +30,41 @@
             border-radius: 3px;
         }
         .enabled-btn.active {
-            background-color: #36f48bff;
+            background-color: #36f48bff !important;
         }
     `);
  
-    // Function to add /whois button
-    function clickTrade(row) {
-        if (row.querySelector('.enabled-btn')) return;
- 
-        const directButton = row.querySelector('.direct-btn');
+    // Function to click trade button
+    function clickTrade(row) { 
+        const directButton = row.querySelector('.direct-btn:not(.disabled)');
         if (!directButton) return;
+        
+        directButton.click();
+     
+    }
  
-        const charName = row.querySelector('.character-name').textContent;
-        const cleanedName = charName.replace(/^IGN: /, '').trim();
-
-        const whoIsString = `/whois ${cleanedName}`;
-
-        const whoIsButton = document.createElement('button');
-        whoIsButton.className = 'enabled-btn';
-        whoIsButton.textContent = whoIsString;
-        whoIsButton.title = 'Copy /whois command to clipboard';
- 
-        // Add an event listener to the button
-        whoIsButton.addEventListener('click', function() {
-        // Get the text content of the button
-        const textToCopy = whoIsButton.textContent;
-
-        // Use Clipboard API to copy the text
-        navigator.clipboard.writeText(textToCopy)
-        .then(() => {
-            console.log('Text copied to clipboard');
-            })
-        .catch(err => {
-            console.error('Could not copy text: ', err);
+    let observer;
+    function enableObserver() {
+        if (!observer) {
+            observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1 && node.matches('.row[data-id]')) {
+                            clickTrade(node);
+                        }
+                    });
+                });
             });
+        }
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
         });
-
-        directButton.parentNode.insertBefore(whoIsButton, directButton.nextSibling);
+    }
+    function disableObserver() {
+        if (observer) {
+            observer.disconnect();
+        }
     }
  
     // Add alert buttons to existing items
@@ -77,35 +74,26 @@
             console.log("Looking for button");
             if (liveSearchBtn) {
                 clearInterval(interval);
-                const newElement = document.createElement('button');
-                newElement.className = "enabled-btn";
-                newElement.innerHTML = `
-                <button id='autotrade-button' type="button" class='enabled-btn' onclick='addResistancesClick()'>
-                    <span>Autotrade Disabled</span>
-                </button>
-                `;
-                console.log("Adding button");
-                liveSearchBtn.after(newElement);
+                liveSearchBtn.style.minWidth = "200px";
+                const autoTradeBtn = document.createElement('button');
+                autoTradeBtn.className = 'enabled-btn';
+                autoTradeBtn.textContent = 'Autotrade Disabled';
+ 
+                autoTradeBtn.addEventListener('click', () => {
+                    if (autoTradeBtn.classList.contains('active')) {
+                        autoTradeBtn.classList.remove('active');
+                        autoTradeBtn.textContent = 'Autotrade Disabled';
+                        disableObserver();
+                    } else {
+                        autoTradeBtn.classList.add('active');
+                        autoTradeBtn.textContent = 'Autotrade Enabled';
+                        enableObserver();
+                    }
+                });
+                liveSearchBtn.after(autoTradeBtn);
             }
         }, 500);
     }
- 
-    // Watch for new items being added
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-                if (node.nodeType === 1 && node.matches('.row[data-id]')) {
-                    clickTrade(node);
-                }
-            });
-        });
-    });
- 
-    // Start observing
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
  
     // Initial setup
     onLoad();
