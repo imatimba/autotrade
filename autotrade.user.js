@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         POE2 Auto trade
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @match        https://www.pathofexile.com/trade2*
 // @grant        GM_addStyle
 // @grant        GM_notification
