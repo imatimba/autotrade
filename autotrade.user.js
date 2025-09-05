@@ -36,9 +36,8 @@
         }
     `);
  
-    // Function to click trade button
     function clickTrade(element) { 
-        if (!window.location.href.includes('live')) return;
+        if (!window.location.href.includes('live')) return; // Only operate in live search mode
         if (element.matches('.direct-btn:not(.disabled)')) {
             element.click();
         } else {
@@ -63,29 +62,77 @@
                 });
             });
         }
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        // Only start observing if not already observing
+        if (!observer._isObserving) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            observer._isObserving = true;
+            console.log('Observer enabled');
+        }
     }
     function disableObserver() {
-        if (observer) {
+        if (observer && observer._isObserving) {
             observer.disconnect();
+            observer._isObserving = false;
+            console.log('Observer disabled');
         }
     }
  
-    // Add autotrade button next to live search button
+    // BroadcastChannel for global observer control
+    const channel = new BroadcastChannel('autotrade_channel');
+    channel.onmessage = (event) => {
+        console.log('[BroadcastChannel] Message received:', event.data);
+        if (event.data === 'enable-observer') {
+            if (!autoTradeBtn.classList.contains('active')) {
+                autoTradeBtn.classList.add('active');
+                autoTradeBtn.textContent = 'Autotrade Enabled';                
+            }
+            if (!globalBtn.classList.contains('active')) {
+                globalBtn.classList.add('active');
+                globalBtn.textContent = 'Global Enabled';
+            }
+            enableObserver();
+        } else if (event.data === 'disable-observer') {
+            if (autoTradeBtn.classList.contains('active')) {
+                autoTradeBtn.classList.remove('active');
+                autoTradeBtn.textContent = 'Autotrade Disabled';
+            }
+            if (globalBtn.classList.contains('active')) {
+                globalBtn.classList.remove('active');
+                globalBtn.textContent = 'Global Disabled';
+            }
+            disableObserver();
+        }
+    };
+    channel.onerror = (err) => {
+        console.error('[BroadcastChannel] Error:', err);
+    };
+    channel.onmessageerror = (err) => {
+        console.error('[BroadcastChannel] Message error:', err);
+    };
+ 
+    let autoTradeBtn;
+    let globalBtn;
+    
     function onLoad() {
         const interval = setInterval(() => {
             const liveSearchBtn = document.querySelector("button.btn.livesearch-btn");
-            console.log("Looking for button");
             if (liveSearchBtn) {
                 clearInterval(interval);
                 liveSearchBtn.style.minWidth = "200px";
-                const autoTradeBtn = document.createElement('button');
+                const controlsLeft = document.querySelector('.controls-left');
+                const controlsRight = document.querySelector('.controls-right');
+                const controlsCenter = document.querySelector('.controls-center');
+                [controlsLeft, controlsRight, controlsCenter].forEach(el => {
+                    if (el) el.style.width = "33%";
+                });
+                
+                autoTradeBtn = document.createElement('button');
                 autoTradeBtn.className = 'enabled-btn';
                 autoTradeBtn.textContent = 'Autotrade Disabled';
- 
+
                 autoTradeBtn.addEventListener('click', () => {
                     if (autoTradeBtn.classList.contains('active')) {
                         autoTradeBtn.classList.remove('active');
@@ -98,6 +145,33 @@
                     }
                 });
                 liveSearchBtn.after(autoTradeBtn);
+
+                globalBtn = document.createElement('button');
+                globalBtn.className = 'enabled-btn';
+                globalBtn.textContent = 'Global Disabled';
+                globalBtn.title = 'Toggle autotrade in all tabs';
+                
+                globalBtn.addEventListener('click', () => {
+                    const isActive = globalBtn.classList.contains('active');
+                    if (!isActive) {
+                        globalBtn.textContent = 'Global Enabled';
+                        globalBtn.classList.add('active');
+                        autoTradeBtn.textContent = 'Autotrade Enabled';
+                        autoTradeBtn.classList.add('active');
+                        console.log('[BroadcastChannel] Sending message:', 'enable-observer');
+                        channel.postMessage('enable-observer');
+                        enableObserver();
+                    } else {
+                        globalBtn.textContent = 'Global Disabled';
+                        globalBtn.classList.remove('active');
+                        autoTradeBtn.textContent = 'Autotrade Disabled';
+                        autoTradeBtn.classList.remove('active');
+                        console.log('[BroadcastChannel] Sending message:', 'disable-observer');
+                        channel.postMessage('disable-observer');
+                        disableObserver();
+                    }
+                });
+                autoTradeBtn.after(globalBtn);
             }
         }, 500);
     }
