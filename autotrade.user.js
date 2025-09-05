@@ -38,12 +38,12 @@
  
     // Function to click trade button
     function clickTrade(element) { 
+        if (!window.location.href.includes('live')) return;
         if (element.matches('.direct-btn:not(.disabled)')) {
             element.click();
         } else {
             const directButton = element.querySelector('.direct-btn:not(.disabled)');
             if (!directButton) return;
-        
             directButton.click();
         }
     }
