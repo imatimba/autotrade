@@ -36,14 +36,29 @@
         }
     `);
  
+    // Helper to wait until button is enabled
+    function waitForEnabled(btn, maxTries = 10, interval = 50) {
+        let tries = 0;
+        const timer = setInterval(() => {
+            if (!btn.disabled && !btn.classList.contains('disabled')) {
+                btn.click();
+                console.log('Clicked trade button after waiting for enabled');
+                clearInterval(timer);
+            } else if (++tries >= maxTries) {
+                console.log('Button did not become enabled in time');
+                clearInterval(timer);
+            }
+        }, interval);
+    }
+
     function clickTrade(element) { 
         if (!window.location.href.includes('live')) return; // Only operate in live search mode
-        if (element.matches('.direct-btn:not(.disabled)')) {
-            element.click();
+        if (element.matches('.direct-btn')) {
+            waitForEnabled(element);
         } else {
-            const directButton = element.querySelector('.direct-btn:not(.disabled)');
+            const directButton = element.querySelector('.direct-btn');
             if (!directButton) return;
-            directButton.click();
+            waitForEnabled(directButton);
         }
     }
  
@@ -52,13 +67,24 @@
         if (!observer) {
             observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1 && node.matches('.row[data-id]')) {
-                            clickTrade(node);
-                        } else if (node.nodeType === 1 && node.matches('.direct-btn:not(.disabled)')) {
-                            clickTrade(node);
+                    if (mutation.type === 'childList') {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === 1 && node.matches('.row[data-id]')) {
+                                clickTrade(node);
+                                console.log('New trade row detected, attempting to click trade button');
+                            }
+                        });
+                    } else if (mutation.type === 'characterData') {
+                        const parent = mutation.target.parentElement;
+                        if (parent && parent.classList.contains('direct-btn')) {
+                            // Trim and check the text content
+                            const btnText = parent.textContent.trim();
+                            if (btnText.includes('In demand. Teleport anyway?')) {
+                                clickTrade(parent);
+                                console.log('Character data changed, matching text, attempting to click trade button');
+                            }
                         }
-                    });
+                    }
                 });
             });
         }
@@ -66,7 +92,8 @@
         if (!observer._isObserving) {
             observer.observe(document.body, {
                 childList: true,
-                subtree: true
+                subtree: true,
+                characterData: true
             });
             observer._isObserving = true;
             console.log('Observer enabled');
